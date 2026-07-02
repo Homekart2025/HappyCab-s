@@ -31,7 +31,7 @@
         <div class="menu-links">
             <button onclick="showPage('homePage')"><span class="icon">🏠</span> Home Panel</button>
             <button onclick="showPage('addDriverPage')"><span class="icon">➕</span> Add Driver</button>
-            <button onclick="showPage('controlPanelSummaryPage')"><span class="icon">📊</span> Bill Summary</button>
+            <button onclick="showPage('summaryPage'); renderControlPanelSummary();"><span class="icon">📊</span> Bill Summary</button>
             <button onclick="exportBackup()"><span class="icon">💾</span> Backup Data</button>
             <label class="restore-btn">
                 <span class="icon">📂</span> Restore Data
@@ -68,132 +68,165 @@
         </div>
     </section>
 
-    <section id="driverPage" class="page" style="display:none;">
+    <section id="driverMenuPage" class="page" style="display:none;">
         <div class="card info-card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h2 id="driverTitle" style="margin:0;">Driver Options Menu</h2>
-                <button onclick="editDriver(currentDriver.id)" style="width: auto; padding: 6px 12px; font-size: 12px; margin:0; background:#64748b;">Edit Info</button>
+                <h2 id="menuDriverTitle" style="margin:0;">Driver Options</h2>
+                <button onclick="showPage('homePage')" style="width: auto; padding: 6px 12px; font-size: 12px; margin:0; background:#64748b;">Back</button>
             </div>
-            <p id="driverPhoneText" style="color: #64748b; font-size: 13px;"></p>
+            <p id="menuDriverPhoneText" style="color: #64748b; font-size: 13px;"></p>
             <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
             
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="showPage('createBillPage')" style="background: #1e293b; padding: 14px;">📝 1. Go To Create Bill</button>
-                <button onclick="showPage('billDetailsPage')" style="background: #1e293b; padding: 14px;">📂 2. Go To Bill Details & History</button>
-                <button onclick="showPage('paymentsPage')" style="background: #1e293b; padding: 14px;">💳 3. Go To Payments & Ledgers</button>
-                <button onclick="showPage('homePage')" style="background: #64748b; padding: 10px; margin-top: 10px;">⬅️ Back to Driver List</button>
-            </div>
+            <button onclick="openCreateBill()" style="background: #008060; color: white; margin-bottom: 10px;">1. Create Bill</button>
+            <button onclick="openBillDetails()" style="background: #1e293b; color: white; margin-bottom: 10px;">2. Bill Details</button>
+            <button onclick="openPaymentsLedger()" style="background: #25D366; color: white;">3. Payments & Ledger</button>
         </div>
     </section>
 
-    <section id="createBillPage" class="page" style="display: none;">
-        <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0;">📝 Create Bill Screen</h3>
-                <button onclick="showPage('driverPage')" style="width:auto; padding:6px 12px; margin:0; background:#64748b; font-size:12px;">↩️ Options Menu</button>
+    <section id="driverPage" class="page" style="display:none;">
+        <div class="card info-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 id="driverTitle" style="margin:0;">Driver Details</h2>
+                <button onclick="showPage('driverMenuPage')" style="width: auto; padding: 6px 12px; font-size: 12px; margin:0; background:#64748b;">Back to Menu</button>
             </div>
-            
+            <p id="driverPhoneText" style="color: #64748b; font-size: 13px;"></p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+
             <input type="text" id="vehicleNumber" placeholder="Vehicle Number" style="text-transform: uppercase;">
             
             <div style="display: flex; gap: 10px; margin-bottom: 5px;">
                 <div style="flex: 1;">
                     <label style="font-size: 12px; font-weight: bold; color: #64748b;">Date From</label>
-                    <input type="date" id="weekStart" style="margin-top:4px;">
+                    <input type="date" id="weekStart" style="margin-top:4px;" onkeydown="nextField(event)">
                 </div>
                 <div style="flex: 1;">
                     <label style="font-size: 12px; font-weight: bold; color: #64748b;">Date Up To</label>
-                    <input type="date" id="weekEnd" style="margin-top:4px;">
+                    <input type="date" id="weekEnd" style="margin-top:4px;" onkeydown="nextField(event)">
                 </div>
             </div>
 
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Trips</label>
             <input type="number" id="tripCount" placeholder="Trips" onkeydown="nextField(event)">
+            
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Cash Collection</label>
             <input type="number" id="cashCollection" placeholder="Cash Collection" onkeydown="nextField(event)">
+            
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Total Earnings</label>
             <input type="number" id="totalEarnings" placeholder="Total Earnings" onkeydown="nextField(event)">
+            
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Drive Pass</label>
             <input type="number" id="drivePass" placeholder="Drive Pass" onkeydown="nextField(event)">
+            
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Toll</label>
             <input type="number" id="toll" placeholder="Toll" onkeydown="nextField(event)">
+            
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Insurance</label>
             <input type="number" id="insurance" placeholder="Insurance" onkeydown="nextField(event)">
+            
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Traffic Fine</label>
             <input type="number" id="trafficFine" placeholder="Traffic Fine" onkeydown="nextField(event)">
+            
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Daily Rent</label>
             <input type="number" id="dailyRent" placeholder="Daily Rent" onkeydown="nextField(event)">
-            <input type="number" id="oldBalance" placeholder="Old Balance" onkeydown="nextField(event)">
+            
+            <label style="font-size: 12px; font-weight: bold; color: #475569;">Old Balance (Auto Calculated)</label>
+            <input type="number" id="oldBalance" placeholder="Old Balance" readonly style="background-color: #f1f5f9; font-weight: bold;">
+            
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Additional Rent</label>
             <input type="number" id="additionalRent" placeholder="Additional Rent" onkeydown="nextField(event)">
+            
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Bill Redemption</label>
             <input type="number" id="billRedemption" placeholder="Bill Redemption" onkeydown="nextField(event)">
             
-            <label style="font-size: 11px; font-weight: bold; color: #008060;">Fuel & Vehicle Expenses (From Payments)</label>
-            <input type="number" id="fuelExpensesField" placeholder="0.00" readonly style="background: #f1f2f4;">
+            <label style="font-size: 12px; font-weight: bold; color: #475569;">Fuel Variations (From Payments)</label>
+            <input type="number" id="fuelVariations" placeholder="Fuel Variations" readonly style="background-color: #f1f5f9;">
             
-            <label style="font-size: 11px; font-weight: bold; color: #008060;">Office Advance (From Payments)</label>
-            <input type="number" id="officeAdvanceField" placeholder="0.00" readonly style="background: #f1f2f4;">
-            
-            <label style="font-size: 11px; font-weight: bold; color: #1e293b;">Amount Collected (Total)</label>
-            <input type="number" id="amountCollected" placeholder="Amount Collected" onkeydown="nextField(event)">
+            <label style="font-size: 12px; font-weight: bold; color: #475569;">Vehicle Expenses (From Payments)</label>
+            <input type="number" id="vehicleExpenses" placeholder="Vehicle Expenses" readonly style="background-color: #f1f5f9;">
 
-            <button onclick="calculateBill()" style="background:#008060;">Calculate Bill</button>
-            
+            <label style="font-size: 12px; font-weight: bold; color: #475569;">Total Amount Collected (Auto Summed)</label>
+            <input type="number" id="amountCollected" placeholder="Amount Collected" readonly style="background-color: #f1f5f9; font-weight: bold;">
+
+            <button onclick="calculateBill()">Calculate Bill</button>
+
             <div id="billResult"></div>
 
             <button onclick="saveBill()" style="background: #1e293b; color: white; margin-top: 10px;">Save Bill</button>
-            <button onclick="sendWhatsAppBill()" style="background: #25D366; color: white; margin-top: 10px;">📤 Share via WhatsApp</button>
+            <button onclick="sendWhatsAppBill()" style="background: #25D366; color: white; margin-top: 10px;">📤 Send Bill Image via WhatsApp</button>
         </div>
     </section>
 
-    <section id="billDetailsPage" class="page" style="display: none;">
+    <section id="billDetailsPage" class="page" style="display:none;">
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0;">📂 Filter Bills By Date</h3>
-                <button onclick="showPage('driverPage')" style="width:auto; padding:6px 12px; margin:0; background:#64748b; font-size:12px;">↩️ Options Menu</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>Bill Details History</h2>
+                <button onclick="showPage('driverMenuPage')" style="width: auto; padding: 6px 12px; font-size: 12px; margin:0; background:#64748b;">Back</button>
             </div>
             
-            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Select History Log Date</label>
-            <input type="date" id="historyFilterDate" onchange="filterHistoryByDate()">
-            
-            <div id="dateFilteredBills" style="margin-top: 10px;"></div>
-            <div id="dateFilteredTotal" style="margin-top: 10px; font-weight: bold; font-size: 14px; color: #1e293b;"></div>
-        </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; font-weight: bold;">Filter Start Date</label>
+                    <input type="date" id="historyFilterStart" onchange="loadBillHistory()">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; font-weight: bold;">Filter End Date</label>
+                    <input type="date" id="historyFilterEnd" onchange="loadBillHistory()">
+                </div>
+            </div>
 
-        <div class="card">
-            <h2>All Bill History Logs</h2>
+            <div id="billHistoryTotalSummary" style="background: #f8fafc; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; line-height: 1.5; border: 1px solid #e2e8f0;"></div>
+
             <div id="billHistory"></div>
         </div>
     </section>
 
-    <section id="paymentsPage" class="page" style="display: none;">
+    <section id="paymentsLedgerPage" class="page" style="display:none;">
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 style="margin:0;">💳 Payments & Ledgers</h3>
-                <button onclick="showPage('driverPage')" style="width:auto; padding:6px 12px; margin:0; background:#64748b; font-size:12px;">↩️ Options Menu</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>Payments & Ledger</h2>
+                <button onclick="showPage('driverMenuPage')" style="width: auto; padding: 6px 12px; font-size: 12px; margin:0; background:#64748b;">Back</button>
             </div>
 
-            <div id="oldBalanceDisplayBox" style="font-weight: bold; font-size: 14px; margin-bottom: 12px; color: #1e293b; background: #f1f2f4; padding: 10px; border-radius: 6px;">Old Balance View: ₹0.00</div>
-            
-            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Previous Balance</label>
-            <input type="number" id="payPreviousBalance" placeholder="Enter Previous Balance" value="0" oninput="syncPaymentsTab()">
-            
-            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Bill Received Amount</label>
-            <input type="number" id="payBillReceived" placeholder="Enter Bill Received Amount" value="0" oninput="syncPaymentsTab()">
-            
-            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Fuel Variations / Expenses</label>
-            <input type="number" id="payFuelVariations" placeholder="Enter Fuel Variations" value="0" oninput="syncPaymentsTab()">
-            
+            <div style="background: #f8fafc; padding: 14px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; border: 1px solid #e2e8f0; line-height: 1.7;">
+                <div><b>Current Ledger Balance:</b> <span id="ledgerCurrentBalance" style="font-weight: bold; color: #1e293b;">₹0.00</span></div>
+                <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed #cbd5e1;"><b>Daily Office Advance:</b> <span id="ledgerCurrentAdvance" style="font-weight: bold; color: #d82c0d;">₹0.00</span></div>
+            </div>
+
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Fuel Variations</label>
+            <input type="number" id="ledgerFuel" placeholder="Enter Fuel Variations Amount">
+
             <label style="font-size: 12px; font-weight: bold; color: #64748b;">Vehicle Expenses</label>
-            <input type="number" id="payVehicleExpenses" placeholder="Enter Vehicle Expenses" value="0" oninput="syncPaymentsTab()">
-            
-            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Daily Office Advance</label>
-            <input type="number" id="payOfficeAdvance" placeholder="Enter Daily Office Advance" value="0" oninput="syncPaymentsTab()">
+            <input type="number" id="ledgerVehicleExpense" placeholder="Enter Vehicle Expenses">
 
             <label style="font-size: 12px; font-weight: bold; color: #64748b;">Bill Amount Collected</label>
-            <input type="number" id="payAmountCollected" placeholder="Enter Bill Amount Collected" value="0" oninput="syncPaymentsTab()">
-            
-            <button onclick="showPage('createBillPage')" style="background: #008060; color: white; margin-top: 15px; font-size:15px; padding:12px;">Apply & Go to Bill Screen ➡️</button>
+            <input type="number" id="ledgerBillCollected" placeholder="Enter Bill Amount Collected" oninput="liveUpdateLedgerDisplay()">
+
+            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Daily Office Advance</label>
+            <input type="number" id="ledgerDailyAdvance" placeholder="Enter Daily Office Advance" oninput="liveUpdateLedgerDisplay()">
+
+            <button onclick="saveLedgerEntry()" style="background: #008060; color: white; margin-top: 10px;">Save Ledger Values</button>
         </div>
     </section>
 
-    <section id="controlPanelSummaryPage" class="page" style="display:none;">
+    <section id="summaryPage" class="page" style="display:none;">
         <div class="card">
-            <h2>Control Panel: Day Statement Summary</h2>
-            <label style="font-size: 12px; font-weight: bold; color: #64748b;">Choose Target Date</label>
-            <input type="date" id="summaryFilterDate" onchange="loadControlPanelSummary()">
-            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 15px 0;">
-            <div id="summaryResultsContainer"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2>Control Panel Bill Summary</h2>
+                <button onclick="showPage('homePage')" style="width: auto; padding: 6px 12px; font-size: 12px; margin:0; background:#64748b;">Back</button>
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; font-weight: bold;">Select Start Date</label>
+                    <input type="date" id="summaryStart" onchange="renderControlPanelSummary()">
+                </div>
+                <div style="flex: 1;">
+                    <label style="font-size: 12px; font-weight: bold;">Select End Date</label>
+                    <input type="date" id="summaryEnd" onchange="renderControlPanelSummary()">
+                </div>
+            </div>
+
+            <div id="controlPanelSummaryResult"></div>
         </div>
     </section>
 
