@@ -5,6 +5,10 @@ window.onload = () => {
     showPage("homePage"); 
     renderDrivers();
     updateDashboard();
+    
+    const localDate = new Date().toLocaleDateString('sv').split(' ')[0];
+    document.getElementById("summaryStart").value = localDate;
+    document.getElementById("summaryEnd").value = localDate;
 };
 
 function toggleMenu() {
@@ -41,7 +45,17 @@ function saveDriver() {
 
     if (!name || !phone) { alert("Enter Driver Name & Phone"); return; }
 
-    drivers.push({ id: Date.now(), name: name, phone: phone, bills: [] });
+    drivers.push({ 
+        id: Date.now(), 
+        name: name, 
+        phone: phone, 
+        bills: [],
+        ledgerBalance: 0,
+        fuelVariations: 0,
+        vehicleExpenses: 0,
+        billAmountCollected: 0,
+        dailyOfficeAdvance: 0
+    });
     localStorage.setItem("drivers", JSON.stringify(drivers));
 
     document.getElementById("driverName").value = "";
@@ -64,7 +78,7 @@ function renderDrivers() {
 
     drivers.forEach(driver => {
         container.innerHTML += `
-        <div class="driver-card" onclick="openDriver(${driver.id})">
+        <div class="driver-card" onclick="openDriverMenu(${driver.id})">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <h3 style="margin:0; font-weight:600;">${driver.name}</h3>
                 <span onclick="event.stopPropagation(); deleteDriver(${driver.id})" style="color:#d82c0d; font-size:20px; cursor:pointer; padding:4px;">🗑️</span>
@@ -74,42 +88,119 @@ function renderDrivers() {
     });
 }
 
-function openDriver(id, preserveBill = false) {
+function openDriverMenu(id) {
     currentDriver = drivers.find(d => d.id === id);
+    if (!currentDriver) return;
+
+    if (currentDriver.ledgerBalance === undefined) currentDriver.ledgerBalance = 0;
+    if (currentDriver.fuelVariations === undefined) currentDriver.fuelVariations = 0;
+    if (currentDriver.vehicleExpenses === undefined) currentDriver.vehicleExpenses = 0;
+    if (currentDriver.billAmountCollected === undefined) currentDriver.billAmountCollected = 0;
+    if (currentDriver.dailyOfficeAdvance === undefined) currentDriver.dailyOfficeAdvance = 0;
+
+    document.getElementById("menuDriverTitle").innerText = currentDriver.name;
+    document.getElementById("menuDriverPhoneText").innerText = "📱 Phone: " + currentDriver.phone;
+
+    showPage("driverMenuPage");
+}
+
+function openCreateBill() {
     if (!currentDriver) return;
 
     document.getElementById("driverTitle").innerText = currentDriver.name;
     document.getElementById("driverPhoneText").innerText = "📱 Phone: " + currentDriver.phone;
     
-    if (!preserveBill) {
-        document.getElementById("vehicleNumber").value = "";
-        
-        const localDate = new Date().toLocaleDateString('sv').split(' ')[0];
-        document.getElementById("weekStart").value = localDate;
-        document.getElementById("weekEnd").value = localDate;
+    document.getElementById("vehicleNumber").value = "";
+    
+    const localDate = new Date().toLocaleDateString('sv').split(' ')[0];
+    document.getElementById("weekStart").value = localDate;
+    document.getElementById("weekEnd").value = localDate;
 
-        const fields = ["tripCount", "cashCollection", "totalEarnings", "drivePass", "toll", "insurance", "trafficFine", "dailyRent", "oldBalance", "additionalRent", "billRedemption", "fuelExpensesField", "officeAdvanceField", "amountCollected"];
-        fields.forEach(f => { const el = document.getElementById(f); if(el) el.value = ""; });
-        
-        document.getElementById("payPreviousBalance").value = 0;
-        document.getElementById("payBillReceived").value = 0;
-        document.getElementById("payFuelVariations").value = 0;
-        document.getElementById("payVehicleExpenses").value = 0;
-        document.getElementById("payAmountCollected").value = 0;
-        document.getElementById("payOfficeAdvance").value = 0;
-        
-        document.getElementById("oldBalanceDisplayBox").innerText = "Old Balance View: ₹0.00";
-        document.getElementById("historyFilterDate").value = "";
-        document.getElementById("dateFilteredBills").innerHTML = "";
-        document.getElementById("dateFilteredTotal").innerHTML = "";
-        
-        document.getElementById("billResult").innerHTML = "";
-        window.currentBill = null; 
-    }
+    let savedLedgerBal = parseFloat(currentDriver.ledgerBalance) || 0;
+    document.getElementById("oldBalance").value = parseFloat(savedLedgerBal.toFixed(2));
+    
+    document.getElementById("fuelVariations").value = currentDriver.fuelVariations || 0;
+    document.getElementById("vehicleExpenses").value = currentDriver.vehicleExpenses || 0;
+    
+    let totalCollected = (parseFloat(currentDriver.billAmountCollected) || 0) + (parseFloat(currentDriver.dailyOfficeAdvance) || 0);
+    document.getElementById("amountCollected").value = totalCollected;
+
+    const fields = ["tripCount", "cashCollection", "totalEarnings", "drivePass", "toll", "insurance", "trafficFine", "dailyRent", "additionalRent", "billRedemption"];
+    fields.forEach(f => { const el = document.getElementById(f); if(el) el.value = ""; });
+    
+    document.getElementById("billResult").innerHTML = "";
+    window.currentBill = null; 
 
     showPage("driverPage");
-    loadBillHistory();
     setupInputListeners();
+}
+
+function openBillDetails() {
+    const localDate = new Date().toLocaleDateString('sv').split(' ')[0];
+    document.getElementById("historyFilterStart").value = localDate;
+    document.getElementById("historyFilterEnd").value = localDate;
+    loadBillHistory();
+    showPage("billDetailsPage");
+}
+
+function openPaymentsLedger() {
+    if (!currentDriver) return;
+    
+    document.getElementById("ledgerCurrentBalance").innerText = "₹" + (currentDriver.ledgerBalance || 0).toFixed(2);
+    document.getElementById("ledgerCurrentAdvance").innerText = "₹" + (currentDriver.dailyOfficeAdvance || 0).toFixed(2);
+    
+    document.getElementById("ledgerFuel").value = "";
+    document.getElementById("ledgerVehicleExpense").value = "";
+    document.getElementById("ledgerBillCollected").value = "";
+    document.getElementById("ledgerDailyAdvance").value = "";
+
+    showPage("paymentsLedgerPage");
+}
+
+function liveUpdateLedgerDisplay() {
+    if (!currentDriver) return;
+    
+    let baseBalance = parseFloat(currentDriver.ledgerBalance) || 0;
+    let typedCollected = parseFloat(document.getElementById("ledgerBillCollected").value) || 0;
+    
+    let liveRemainingBalance = baseBalance + typedCollected;
+    
+    let baseAdvance = parseFloat(currentDriver.dailyOfficeAdvance) || 0;
+    let typedAdvance = parseFloat(document.getElementById("ledgerDailyAdvance").value) || 0;
+    let liveTotalAdvance = baseAdvance + typedAdvance;
+
+    document.getElementById("ledgerCurrentBalance").innerText = "₹" + liveRemainingBalance.toFixed(2);
+    document.getElementById("ledgerCurrentAdvance").innerText = "₹" + liveTotalAdvance.toFixed(2);
+}
+
+function saveLedgerEntry() {
+    if (!currentDriver) return;
+
+    let typedFuel = parseFloat(document.getElementById("ledgerFuel").value) || 0;
+    let typedExpense = parseFloat(document.getElementById("ledgerVehicleExpense").value) || 0;
+    let typedCollected = parseFloat(document.getElementById("ledgerBillCollected").value) || 0;
+    let typedAdvance = parseFloat(document.getElementById("ledgerDailyAdvance").value) || 0;
+
+    currentDriver.fuelVariations = (currentDriver.fuelVariations || 0) + typedFuel;
+    currentDriver.vehicleExpenses = (currentDriver.vehicleExpenses || 0) + typedExpense;
+    
+    let netBalance = (currentDriver.ledgerBalance || 0) + typedCollected;
+    currentDriver.ledgerBalance = parseFloat(netBalance.toFixed(2));
+    
+    currentDriver.dailyOfficeAdvance = (currentDriver.dailyOfficeAdvance || 0) + typedAdvance;
+
+    localStorage.setItem("drivers", JSON.stringify(drivers));
+    
+    document.getElementById("ledgerCurrentBalance").innerText = "₹" + currentDriver.ledgerBalance.toFixed(2);
+    document.getElementById("ledgerCurrentAdvance").innerText = "₹" + currentDriver.dailyOfficeAdvance.toFixed(2);
+
+    document.getElementById("ledgerFuel").value = "";
+    document.getElementById("ledgerVehicleExpense").value = "";
+    document.getElementById("ledgerBillCollected").value = "";
+    document.getElementById("ledgerDailyAdvance").value = "";
+
+    alert("Ledger Balance and Daily Advance saved successfully!");
+    showPage("driverMenuPage");
 }
 
 function updateDashboard() {
@@ -126,32 +217,10 @@ function handleInputChange() {
 }
 
 function setupInputListeners() {
-    // Select normal interactive input fields to protect programmatic updates from breaking input focus
-    const interactiveInputs = document.querySelectorAll("#createBillPage input:not([readonly])");
-    interactiveInputs.forEach(input => {
-        input.oninput = handleInputChange;
+    const inputs = document.querySelectorAll("#driverPage input");
+    inputs.forEach(input => {
+        input.oninput = handleInputChange; 
     });
-}
-
-function syncPaymentsTab() {
-    let prevBal = parseFloat(document.getElementById("payPreviousBalance").value) || 0;
-    let billRec = parseFloat(document.getElementById("payBillReceived").value) || 0;
-    let fuelVar = parseFloat(document.getElementById("payFuelVariations").value) || 0;
-    let vehExp = parseFloat(document.getElementById("payVehicleExpenses").value) || 0;
-    let officeAdv = parseFloat(document.getElementById("payOfficeAdvance").value) || 0;
-    let amtCollected = parseFloat(document.getElementById("payAmountCollected").value) || 0;
-    
-    let computedOldBalance = prevBal - billRec;
-    let totalFuelAndExp = fuelVar + vehExp;
-    
-    // Safely populates fields without continuous focus stealing or loop glitches
-    document.getElementById("oldBalance").value = computedOldBalance;
-    document.getElementById("fuelExpensesField").value = totalFuelAndExp;
-    document.getElementById("officeAdvanceField").value = officeAdv;
-    document.getElementById("amountCollected").value = amtCollected;
-    
-    document.getElementById("oldBalanceDisplayBox").innerText = `Old Balance View: ₹${computedOldBalance.toFixed(2)}`;
-    handleInputChange();
 }
 
 function calculateBill() {
@@ -172,23 +241,23 @@ function calculateBill() {
     let insurance = parseFloat(document.getElementById("insurance").value) || 0;
     let fine = parseFloat(document.getElementById("trafficFine").value) || 0;
     let rent = parseFloat(document.getElementById("dailyRent").value) || 0;
-    let oldBalance = parseFloat(document.getElementById("oldBalance").value) || 0;
+    let oldBal = parseFloat(document.getElementById("oldBalance").value) || 0;
     let additionalRent = parseFloat(document.getElementById("additionalRent").value) || 0;
     let redemption = parseFloat(document.getElementById("billRedemption").value) || 0;
     
-    let fuelExpenses = parseFloat(document.getElementById("fuelExpensesField").value) || 0;
-    let officeAdvance = parseFloat(document.getElementById("officeAdvanceField").value) || 0;
-    let amountCollected = parseFloat(document.getElementById("amountCollected").value) || 0;
+    let fuelVar = parseFloat(document.getElementById("fuelVariations").value) || 0;
+    let vehExp = parseFloat(document.getElementById("vehicleExpenses").value) || 0;
+    let collected = parseFloat(document.getElementById("amountCollected").value) || 0;
 
     let variation = cash - earnings;
-    
-    // MATHEMATICALLY PERFECT COMPUTATION LOGIC
-    let totalBill = variation + drivePass + insurance + fine + rent + oldBalance + additionalRent + fuelExpenses + officeAdvance - toll - redemption;
-    let finalBalance = totalBill - amountCollected;
+    let totalBill = variation + drivePass + insurance + fine + rent + oldBal + additionalRent + fuelVar + vehExp - toll - redemption;
+    let finalBalance = totalBill - collected;
     let displayRefund = Math.abs(finalBalance);
 
     window.currentBill = {
-        vehicleNum, dateFrom: formattedFrom, dateUpTo: formattedUpTo, dateRaw: dateUpTo || new Date().toLocaleDateString('sv').split(' ')[0], trips, cash, earnings, variation, drivePass, toll, insurance, fine, rent, oldBalance, additionalRent, redemption, fuelExpenses, officeAdvance, amountCollected, totalBill, finalBalance
+        vehicleNum, dateFrom: formattedFrom, dateUpTo: formattedUpTo, rawDateFrom: dateFrom, rawDateUpTo: dateUpTo,
+        trips, cash, earnings, variation, drivePass, toll, insurance, fine, rent, oldBalance: oldBal, 
+        additionalRent, redemption, fuelVariations: fuelVar, vehicleExpenses: vehExp, collected, totalBill, finalBalance
     };
 
     let statusHTML = "";
@@ -230,22 +299,23 @@ function calculateBill() {
             <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5;"><span>Drive Pass:</span> <span>₹${drivePass.toFixed(2)}</span></div>
             <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5;"><span>Traffic Fine:</span> <span>₹${fine.toFixed(2)}</span></div>
             <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5;"><span>Insurance:</span> <span>₹${insurance.toFixed(2)}</span></div>
-            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5; color:#e34a31; font-weight:600;"><span>Toll Deductions (-):</span> <span>₹${toll.toFixed(2)}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5; color:#e34a31; font-weight:600;"><span>Toll Deductions (-):</span> <span style="color:#e34a31;">₹${toll.toFixed(2)}</span></div>
             <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5;"><span>Daily Rent:</span> <span>₹${rent.toFixed(2)}</span></div>
-            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5;"><span>Old Balance:</span> <span>₹${oldBalance.toFixed(2)}</span></div>
-            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5; color:#e34a31; font-weight:600;"><span>Bill Redemption (-):</span> <span>₹${redemption.toFixed(2)}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5;"><span>Old Balance:</span> <span>₹${oldBal.toFixed(2)}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5; color:#e34a31; font-weight:600;"><span>Bill Redemption (-):</span> <span style="color:#e34a31;">₹${redemption.toFixed(2)}</span></div>
             <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5;"><span>Additional Rent:</span> <span>₹${additionalRent.toFixed(2)}</span></div>
-            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5;"><span>Fuel & Vehicle Exp:</span> <span>₹${fuelExpenses.toFixed(2)}</span></div>
-            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5;"><span>Office Advance:</span> <span>₹${officeAdvance.toFixed(2)}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5;"><span>Fuel Variations (+):</span> <span>₹${fuelVar.toFixed(2)}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5;"><span>Vehicle Expenses (+):</span> <span>₹${vehExp.toFixed(2)}</span></div>
+            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5; color:#6d7175;"><span>Amount Collected:</span> <span style="color:#6d7175;">₹${collected.toFixed(2)}</span></div>
             
-            <div style="display:flex; justify-content:space-between; padding:12px 0 4px 0; font-size:1.3rem; font-weight:800; color:#202223; border-top:2px solid #202223; margin-top:10px;">
+            <div style="display:flex; justify-content:space-between; padding:12px 0 4px 0; font-size:1.5rem; font-weight:800; color:#202223; border-top:2px solid #202223; margin-top:10px;">
                 <span>TOTAL BILL:</span> 
                 <span>₹${totalBill.toFixed(2)}</span>
             </div>
 
-            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5; color:#202223; font-weight:600;">
-                <span>Amount Collected (-):</span> 
-                <span>₹${amountCollected.toFixed(2)}</span>
+            <div style="display:flex; justify-content:space-between; font-size:14px; padding:8px 0; border-bottom:1px dashed #e1e3e5; color:#6d7175;">
+                <span>Advance/Collected:</span> 
+                <span>₹${collected.toFixed(2)}</span>
             </div>
             
             <div style="margin-top:15px; width:100%;">
@@ -258,118 +328,117 @@ function calculateBill() {
 function saveBill() {
     if (!currentDriver || !window.currentBill) { alert("Please Calculate Bill First"); return; }
     
-    currentDriver.bills.push({ 
-        id: Date.now(),
-        date: new Date().toLocaleDateString(), 
-        ...window.currentBill 
-    });
+    currentDriver.ledgerBalance = window.currentBill.finalBalance;
     
+    currentDriver.fuelVariations = 0;
+    currentDriver.vehicleExpenses = 0;
+    currentDriver.billAmountCollected = 0;
+    currentDriver.dailyOfficeAdvance = 0;
+
+    currentDriver.bills.push({ date: new Date().toLocaleDateString(), ...window.currentBill });
     localStorage.setItem("drivers", JSON.stringify(drivers));
-    loadBillHistory();
-    alert("Bill Saved to History Logs!");
 }
 
 function loadBillHistory() {
     const history = document.getElementById("billHistory");
+    const totalSummaryDiv = document.getElementById("billHistoryTotalSummary");
     if (!history) return;
     history.innerHTML = "";
-    if (!currentDriver || !currentDriver.bills || currentDriver.bills.length === 0) return;
-
-    currentDriver.bills.slice().reverse().forEach(bill => {
-        history.innerHTML += `
-        <div class="bill-item">
-            <span>🚗 ${bill.vehicleNum || 'N/A'} | 📅 ${bill.dateFrom || bill.date}</span>
-            <strong>₹${bill.totalBill.toFixed(2)}</strong>
-        </div>`;
-    });
-}
-
-function filterHistoryByDate() {
-    const chosenDate = document.getElementById("historyFilterDate").value;
-    const recordsBox = document.getElementById("dateFilteredBills");
-    const totalsBox = document.getElementById("dateFilteredTotal");
     
-    if(!recordsBox || !totalsBox || !currentDriver) return;
-    recordsBox.innerHTML = "";
-    totalsBox.innerHTML = "";
-    
-    if(!chosenDate) return;
-    
-    let localFormat = new Date(chosenDate).toLocaleDateString();
-    let matches = currentDriver.bills.filter(b => b.date === localFormat || b.dateRaw === chosenDate);
-    
-    if(matches.length === 0) {
-        recordsBox.innerHTML = "<p style='color:#64748b; font-size:13px;'>No bills found on this date.</p>";
+    if (!currentDriver || !currentDriver.bills || currentDriver.bills.length === 0) {
+        totalSummaryDiv.innerHTML = "No bills found.";
         return;
     }
-    
-    let sumTotal = 0;
-    matches.forEach((bill, index) => {
-        sumTotal += bill.totalBill;
-        recordsBox.innerHTML += `
-            <div style="border:1px solid #cbd5e1; padding:10px; border-radius:6px; margin-bottom:8px; font-size:13px; background:#f8fafc; line-height:1.5;">
-                <b>Invoice #${index+1} (${bill.vehicleNum})</b><br>
-                Trips: ${bill.trips} | Rent: ₹${bill.rent}<br>
-                Collected Field: ₹${bill.amountCollected}<br>
-                <strong>Total Bill Amount: ₹${bill.totalBill.toFixed(2)}</strong>
-            </div>
-        `;
+
+    let filterStart = document.getElementById("historyFilterStart").value;
+    let filterEnd = document.getElementById("historyFilterEnd").value;
+
+    let filteredBills = currentDriver.bills.filter(b => {
+        if(!filterStart || !filterEnd) return true;
+        return b.rawDateFrom >= filterStart && b.rawDateUpTo <= filterEnd;
     });
-    
-    totalsBox.innerHTML = `Total Accumulated Bill Amount: ₹${sumTotal.toFixed(2)}`;
+
+    let sumTrips = 0, sumCash = 0, sumEarnings = 0, sumTotalBill = 0, sumFinalBalance = 0;
+
+    filteredBills.slice().reverse().forEach(bill => {
+        sumTrips += (bill.trips || 0);
+        sumCash += (bill.cash || 0);
+        sumEarnings += (bill.earnings || 0);
+        sumTotalBill += (bill.totalBill || 0);
+        sumFinalBalance += (bill.finalBalance || 0);
+
+        history.innerHTML += `
+        <div class="bill-item">
+            <div><b>📅 Date:</b> ${bill.dateFrom} to ${bill.dateUpTo} | 🚗 ${bill.vehicleNum}</div>
+            <div>Trips: ${bill.trips} | Cash: ₹${bill.cash.toFixed(2)} | Earnings: ₹${bill.earnings.toFixed(2)}</div>
+            <div>Fuel Var: ₹${(bill.fuelVariations || 0).toFixed(2)} | Veh Exp: ₹${(bill.vehicleExpenses || 0).toFixed(2)}</div>
+            <div><b>Total Bill:</b> ₹${bill.totalBill.toFixed(2)} | <b>Final Balance:</b> ₹${bill.finalBalance.toFixed(2)}</div>
+        </div>`;
+    });
+
+    totalSummaryDiv.innerHTML = `
+        <b>Total Accumulated Summary (${filteredBills.length} Bills):</b><br>
+        Total Trips: ${sumTrips}<br>
+        Total Cash Collection: ₹${sumCash.toFixed(2)}<br>
+        Total Earnings: ₹${sumEarnings.toFixed(2)}<br>
+        Total Bill Amount: ₹${sumTotalBill.toFixed(2)}<br>
+        Net Final Balance: ₹${sumFinalBalance.toFixed(2)}
+    `;
 }
 
-function loadControlPanelSummary() {
-    const filterDate = document.getElementById("summaryFilterDate").value;
-    const container = document.getElementById("summaryResultsContainer");
+function renderControlPanelSummary() {
+    const container = document.getElementById("controlPanelSummaryResult");
     if(!container) return;
     container.innerHTML = "";
-    
-    if(!filterDate) return;
-    
-    let searchFormat = new Date(filterDate).toLocaleDateString();
-    let combinedHTML = "";
-    let grandRevenue = 0;
-    
-    drivers.forEach(driver => {
-        let matchingBills = driver.bills.filter(b => b.date === searchFormat || b.dateRaw === filterDate);
+
+    let start = document.getElementById("summaryStart").value;
+    let end = document.getElementById("summaryEnd").value;
+
+    let totalTrips = 0, totalCash = 0, totalEarnings = 0, totalBillAmount = 0;
+    let htmlBlock = "";
+
+    drivers.forEach(d => {
+        let matchingBills = d.bills.filter(b => {
+            if(!start || !end) return true;
+            return b.rawDateFrom >= start && b.rawDateUpTo <= end;
+        });
+
         if(matchingBills.length > 0) {
-            combinedHTML += `
-                <div style="margin-bottom:15px; padding:12px; border:1px solid #94a3b8; border-radius:8px; background:#ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-                    <h4 style="margin:0 0 6px 0; color:#1e293b; font-size:14px;">🙋‍♂️ Driver: ${driver.name}</h4>
-            `;
-            matchingBills.forEach((bill, idx) => {
-                grandRevenue += bill.totalBill;
-                combinedHTML += `
-                    <div style="font-size:12px; padding:6px 0; border-top:1px dashed #e2e8f0; line-height:1.6; color:#334155;">
-                        <b>Car:</b> ${bill.vehicleNum} | <b>Period:</b> ${bill.dateFrom} - ${bill.dateUpTo}<br>
-                        <b>Trips:</b> ${bill.trips} | <b>Rent:</b> ₹${bill.rent} | <b>Uber Var:</b> ₹${bill.variation}<br>
-                        <b>Old Balance:</b> ₹${bill.oldBalance} | <b>Collected:</b> ₹${bill.amountCollected}<br>
-                        <strong>Bill Total: ₹${bill.totalBill.toFixed(2)} | Balance Status: ₹${bill.finalBalance.toFixed(2)}</strong>
-                    </div>
-                `;
+            htmlBlock += `<h3 style="margin-top:10px; color:#008060;">👤 ${d.name}</h3>`;
+            matchingBills.forEach(b => {
+                totalTrips += (b.trips || 0);
+                totalCash += (b.cash || 0);
+                totalEarnings += (b.earnings || 0);
+                totalBillAmount += (b.totalBill || 0);
+
+                htmlBlock += `
+                <div class="bill-item" style="background:#fff;">
+                    <b>Period:</b> ${b.dateFrom} - ${b.dateUpTo} | <b>Vehicle:</b> ${b.vehicleNum}<br>
+                    Trips: ${b.trips} | Cash: ₹${b.cash.toFixed(2)} | Earnings: ₹${b.earnings.toFixed(2)} | Total Bill: ₹${b.totalBill.toFixed(2)}
+                </div>`;
             });
-            combinedHTML += `</div>`;
         }
     });
-    
-    if(combinedHTML === "") {
-        container.innerHTML = "<p style='color:#64748b; text-align:center; font-size:13px;'>No entry data found for selected date.</p>";
-    } else {
-        container.innerHTML = `
-            <div style="padding:12px; background:#008060; color:white; border-radius:6px; margin-bottom:12px; font-weight:bold; font-size:14px; text-align:center;">
-                System Net Total: ₹${grandRevenue.toFixed(2)}
-            </div>
-            ${combinedHTML}
-        `;
-    }
+
+    container.innerHTML = `
+        <div style="background:#1e293b; color:white; padding:15px; border-radius:8px; margin-bottom:15px; font-size:14px;">
+            <b>All Drivers Cumulative Summary:</b><br>
+            Combined Trips: ${totalTrips}<br>
+            Combined Cash: ₹${totalCash.toFixed(2)}<br>
+            Combined Earnings: ₹${totalEarnings.toFixed(2)}<br>
+            Combined Total Bills: ₹${totalBillAmount.toFixed(2)}
+        </div>
+        ${htmlBlock || '<p style="text-align:center;color:#64748b;">No bills found for selected dates.</p>'}
+    `;
 }
 
+// AUTOMATICALLY SAVES THE BILL WHEN WHATSAPP BUTTON IS CLICKED
 function sendWhatsAppBill() {
     if (!window.currentBill || !currentDriver) { alert("Please calculate the bill first!"); return; }
     
+    // Automatically saves data logs and resets temporary fields to 0
     saveBill();
-    
+
     const invoiceElement = document.getElementById("invoiceCapture");
     if (!invoiceElement) return;
 
@@ -392,10 +461,14 @@ function sendWhatsAppBill() {
                 statusText = `💥 *Account Settled*`;
             }
 
-            let msgText = `🚕 *HAPPY CAB’S BILLING*\n\n🙋‍♂️ *Driver:* ${currentDriver.name}\n🚗 *Vehicle:* ${b.vehicleNum}\n📅 *Period:* ${b.dateFrom} to ${b.dateUpTo}\n📋 *TOTAL BILL:* ₹${b.totalBill.toFixed(2)}\n💰 *Collected Amount:* ₹${b.amountCollected.toFixed(2)}\n\n${statusText}`;
+            let msgText = `🚕 *HAPPY CAB’S BILLING*\n\n🙋‍♂️ *Driver:* ${currentDriver.name}\n🚗 *Vehicle:* ${b.vehicleNum}\n📅 *Period:* ${b.dateFrom} to ${b.dateUpTo}\n📋 *TOTAL BILL:* ₹${b.totalBill.toFixed(2)}\n💰 *Advance Received:* ₹${b.collected.toFixed(2)}\n\n${statusText}`;
 
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                navigator.share({ files: [file], title: 'Invoice Summary', text: msgText }).catch(e => console.log(e));
+                navigator.share({ files: [file], title: 'Invoice Summary', text: msgText })
+                .then(() => {
+                     showPage("driverMenuPage");
+                })
+                .catch(e => console.log(e));
             } else {
                 const image = canvas.toDataURL("image/png");
                 const downloadLink = document.createElement("a");
@@ -404,7 +477,8 @@ function sendWhatsAppBill() {
                 downloadLink.download = `Bill_${currentDriver.name}.png`;
                 downloadLink.click();
                 document.body.removeChild(downloadLink);
-                alert("Bill Image Auto-Saved! Share it manually via WhatsApp.");
+                alert("Bill Saved Automatically & Image Downloaded! Share it manually via WhatsApp.");
+                showPage("driverMenuPage");
             }
         }, "image/png");
     });
@@ -449,7 +523,7 @@ function clearSearch() {
 }
 
 function deleteDriver(id) {
-    if (!confirm("Delete Driver permanently? All saved data logs will be erased.")) return;
+    if (!confirm("Delete Driver? Data logs will be erased permanently.")) return;
     drivers = drivers.filter(d => d.id !== id);
     localStorage.setItem("drivers", JSON.stringify(drivers));
     
@@ -462,25 +536,10 @@ function deleteDriver(id) {
     showPage("homePage");
 }
 
-function editDriver(id) {
-    const driver = drivers.find(d => d.id === id);
-    if (!driver) return;
-    const newName = prompt("Driver Name", driver.name);
-    const newPhone = prompt("Phone Number", driver.phone);
-    if (!newName || !newPhone) return;
-
-    driver.name = newName.trim();
-    driver.phone = newPhone.trim();
-    localStorage.setItem("drivers", JSON.stringify(drivers));
-    renderDrivers();
-    updateDashboard();
-    openDriver(id, true); 
-}
-
 function nextField(event) {
     if (event.key === "Enter") {
         event.preventDefault();
-        const inputs = Array.from(document.querySelectorAll("#createBillPage input:not([readonly])")); 
+        const inputs = Array.from(document.querySelectorAll("#driverPage input:not([readonly])")); 
         const index = inputs.indexOf(event.target);
         if (index !== -1 && index < inputs.length - 1) inputs[index + 1].focus();
     }
