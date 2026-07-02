@@ -1,4 +1,3 @@
-/* ALL NEW RE-DESIGNED STYLE DESK */
 * {
     margin: 0;
     padding: 0;
@@ -13,9 +12,8 @@ body {
     overflow-x: hidden;
 }
 
-/* Premium Professional Header */
 header {
-    background: #1e293b; 
+    background: #1e293b;
     padding: 14px 16px;
     color: #f8fafc;
     box-shadow: 0 2px 10px rgba(15, 23, 42, 0.15);
@@ -36,7 +34,7 @@ header {
 .menu-trigger {
     font-size: 26px;
     cursor: pointer;
-    color: #94a3b8; 
+    color: #94a3b8;
     user-select: none;
     width: 38px;
     height: 38px;
@@ -73,13 +71,12 @@ header {
 }
 
 .brand-title {
-    color: #f1f5f9; 
+    color: #f1f5f9;
     font-size: 16px;
     font-weight: 600;
     letter-spacing: 0.4px;
 }
 
-/* Side Drawer Navigation */
 .side-nav {
     position: fixed;
     top: 0;
@@ -158,7 +155,15 @@ header {
 .menu-links button:hover, .restore-btn:hover {
     background: #f1f5f9;
     padding-left: 18px;
-    color: #008060; 
+    color: #008060;
+}
+
+.menu-links button:active, .restore-btn:active {
+    background: #e2e8f0;
+}
+
+.menu-links .icon {
+    font-size: 16px;
 }
 
 .menu-overlay {
@@ -180,7 +185,6 @@ header {
     opacity: 1;
 }
 
-/* Dashboard Geometry */
 .dashboard, .page {
     max-width: 600px;
     margin: 0 auto;
@@ -207,12 +211,14 @@ header {
     color: white;
     padding: 16px;
     border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
 }
 
 .dash-card h3 {
     font-size: 12px;
     font-weight: 500;
     color: #94a3b8;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
 }
 
@@ -230,6 +236,7 @@ header {
     border-radius: 8px;
     margin-bottom: 10px;
     border: 1px solid #e2e8f0;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.02);
     cursor: pointer;
     transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), border-color 0.2s ease;
 }
@@ -239,8 +246,19 @@ header {
     border-color: #cbd5e1;
 }
 
-/* Form Fields */
-input[type="text"], input[type="number"], input[type="date"], select {
+.driver-card h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.driver-card p {
+    color: #64748b;
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+input[type="text"], input[type="number"], input[type="date"] {
     width: 100%;
     padding: 10px 12px;
     margin-bottom: 10px;
@@ -249,26 +267,19 @@ input[type="text"], input[type="number"], input[type="date"], select {
     font-size: 14px;
     outline: none;
     background-color: #fff;
+    -webkit-appearance: none;
+    appearance: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-input:focus, select:focus {
+input:focus {
     border-color: #008060;
     box-shadow: 0 0 0 1px #008060;
 }
 
-label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: #475569;
-    margin-bottom: 4px;
-}
-
-/* Buttons System */
 button {
     width: 100%;
-    padding: 12px;
+    padding: 11px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -277,35 +288,27 @@ button {
     color: #ffffff;
     margin-top: 6px;
     font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
     transition: background 0.2s ease, transform 0.1s ease;
 }
 
 button:hover {
-    filter: brightness(0.9);
+    background: #0f172a;
 }
 
 button:active {
     transform: scale(0.99);
 }
 
-/* History logs grid */
 .bill-item {
     padding: 12px;
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 1.5;
 }
 
-/* Search Box */
 .search-box {
     display: flex;
     align-items: center;
