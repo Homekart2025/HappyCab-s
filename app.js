@@ -250,7 +250,7 @@ function calculateBill() {
     let collected = parseFloat(document.getElementById("amountCollected").value) || 0;
 
     let variation = cash - earnings;
-    let totalBill = variation + drivePass + insurance + fine + rent + oldBal + additionalRent + fuelVar + vehExp - toll - redemption;
+    let totalBill = variation + drivePass + insurance + fine + rent - oldBal + additionalRent + fuelVar + vehExp - toll - redemption;
     let finalBalance = totalBill - collected;
     let displayRefund = Math.abs(finalBalance);
 
